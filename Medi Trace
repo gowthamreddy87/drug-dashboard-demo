@@ -1,0 +1,73 @@
+import os
+
+DATA_PATH = os.path.join("..", "data", "drug_usage.csv")
+FORECAST_OUTPUT = os.path.join("..", "data", "forecast_output.csv")
+
+import pandas as pd
+from config import DATA_PATH
+
+def load_and_clean():
+    df = pd.read_csv(DATA_PATH)
+    df.dropna(inplace=True)
+    df['ds'] = pd.to_datetime(df['date'])
+    df['y'] = df['usage']
+    return df[['ds', 'y']]
+
+from prophet import Prophet
+from preprocess import load_and_clean
+from config import FORECAST_OUTPUT
+import pandas as pd
+
+def run_forecast():
+    df = load_and_clean()
+    model = Prophet()
+    model.fit(df)
+    future = model.make_future_dataframe(periods=30)
+    forecast = model.predict(future)
+    forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_csv(FORECAST_OUTPUT, index=False)
+    print("Forecast saved to:", FORECAST_OUTPUT)
+
+if __name__ == "__main__":
+    run_forecast()
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from config import FORECAST_OUTPUT
+
+
+def plot_forecast():
+    df = pd.read_csv(FORECAST_OUTPUT)
+    df['ds'] = pd.to_datetime(df['ds'])
+    plt.figure(figsize=(10, 5))
+    plt.plot(df['ds'], df['yhat'], label='Forecast')
+    plt.fill_between(df['ds'], df['yhat_lower'], df['yhat_upper'], alpha=0.3)
+    plt.title("Drug Usage Forecast")
+    plt.xlabel("Date")
+    plt.ylabel("Predicted Usage")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+if __name__ == "__main__":
+    plot_forecast()
+
+pandas
+prophet
+matplotlib
+- Load hospital drug usage data
+- Clean and preprocess for time-series
+- Run 30-day demand forecast using Prophet
+- Visualize predictions
+
+```bash
+pip install -r requirements.txt
+python src/forecast.py
+python src/visualize.py
+```
+
+| date       | usage |
+|------------|-------|
+| 2024-01-01 | 300   |
+| 2024-01-02 | 320   |
+
+> Output saved to `data/forecast_output.csv`
